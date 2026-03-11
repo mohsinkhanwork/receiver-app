@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\TransactionReleased;
+use App\Events\TransactionUpdated;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -40,6 +42,9 @@ class TransactionController extends Controller
 
         if ($queued) {
             $queued->update(['queued' => false]);
+            $queued->refresh();
+            // Broadcast new transaction to all clients on this currency channel
+            TransactionReleased::dispatch($queued);
         }
 
         $transactions = Transaction::where('currency', $currency)
@@ -62,6 +67,10 @@ class TransactionController extends Controller
         ]);
 
         $transaction->update(['status' => $validated['status']]);
+        $transaction->refresh();
+
+        // Broadcast status change — all clients on this currency channel update instantly
+        TransactionUpdated::dispatch($transaction);
 
         return response()->json($transaction);
     }
