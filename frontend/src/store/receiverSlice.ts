@@ -9,7 +9,7 @@ interface ReceiverState {
 
 const initialState: ReceiverState = {
   isOpen: false,
-  selectedCurrency: "USD", // default is USD as per requirements
+  selectedCurrency: "USD", 
   search: "",
 };
 

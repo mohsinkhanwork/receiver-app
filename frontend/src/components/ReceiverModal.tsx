@@ -13,13 +13,53 @@ import {
   fetchCurrencies,
   fetchTransactions,
   updateTransactionStatus,
-  getDownloadUrl,
   type Currency,
 } from "@/lib/api";
 import { getEcho } from "@/lib/echo";
 
 // ── Static mock receiver profile ─────────────────────────────────────────────
 const RECEIVER = { name: "John Bonham", type: "Individual", email: "john@email.com" };
+
+function downloadTransactionReport(tx: Transaction, info: typeof ACCOUNT_INFO[string]) {
+  const lines = [
+    "TRANSACTION REPORT",
+    "==================",
+    "",
+    `Date & Time   : ${formatDate(tx.created_at)}`,
+    `Request ID    : ${fakeRequestId(tx.id)}`,
+    `Status        : ${tx.status}`,
+    "",
+    "RECEIVER DETAILS",
+    "----------------",
+    `Name          : ${RECEIVER.name}`,
+    `Type          : ${RECEIVER.type}`,
+    `Email         : ${RECEIVER.email}`,
+    "",
+    "BANK DETAILS",
+    "------------",
+    `Bank          : ${info.bank}`,
+    `Branch        : ${info.branch}`,
+    `Account No    : ${info.account}`,
+    `SWIFT/BIC     : ${info.swift}`,
+    `Country       : ${info.country}`,
+    "",
+    "TRANSFER DETAILS",
+    "----------------",
+    `To            : ${tx.to_name}`,
+    `Amount        : ${tx.currency} ${Number(tx.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+    `Type          : Send Money / International`,
+    "",
+    `Generated on  : ${new Date().toLocaleString()}`,
+  ];
+
+  const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = `transaction-${fakeRequestId(tx.id)}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 // ── Per-currency bank / account details ──────────────────────────────────────
 const ACCOUNT_INFO: Record<string, {
@@ -34,6 +74,12 @@ const ACCOUNT_INFO: Record<string, {
 const STATUS_STYLE: Record<string, string> = {
   Approved: "bg-green-100 text-green-700",
   Pending:  "bg-yellow-100 text-yellow-800",
+};
+
+const CURRENCY_BG: Record<string, string> = {
+  USD: "bg-blue-50",
+  EUR: "bg-purple-50",
+  GBP: "bg-red-50",
 };
 
 const PAGE_SIZE = 4;
@@ -115,7 +161,6 @@ export default function ReceiverModal() {
     };
   }, [selectedCurrency, dispatch]);
 
-  // Optimistic status toggle — updates Redux instantly, rolls back on API error
   const handleToggle = async (tx: Transaction) => {
     const next = tx.status === "Approved" ? "Pending" : "Approved";
     dispatch(patchTransactionStatus({ id: tx.id, status: next }));
@@ -140,7 +185,7 @@ export default function ReceiverModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden">
+      <div className={`${CURRENCY_BG[selectedCurrency] ?? "bg-white"} rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden transition-colors duration-300`}>
 
         {/* ── Header ── */}
         <div className="flex items-start justify-between px-7 pt-6 pb-3">
@@ -330,13 +375,12 @@ export default function ReceiverModal() {
                             Track Your Payment<br />(Amendment)
                           </span>
                         ) : (
-                          <a
-                            href={getDownloadUrl()}
-                            download
-                            className="text-xs text-teal-600 hover:underline"
+                          <button
+                            onClick={() => downloadTransactionReport(tx, info)}
+                            className="text-xs text-teal-600 hover:underline cursor-pointer"
                           >
                             Download
-                          </a>
+                          </button>
                         )}
                       </td>
                     </tr>

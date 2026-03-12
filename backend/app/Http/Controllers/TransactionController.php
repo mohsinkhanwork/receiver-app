@@ -69,7 +69,6 @@ class TransactionController extends Controller
         $transaction->update(['status' => $validated['status']]);
         $transaction->refresh();
 
-        // Broadcast status change — all clients on this currency channel update instantly
         TransactionUpdated::dispatch($transaction);
 
         return response()->json($transaction);

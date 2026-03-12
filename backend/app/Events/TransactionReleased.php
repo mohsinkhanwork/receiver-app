@@ -11,7 +11,6 @@ use Illuminate\Queue\SerializesModels;
 
 /**
  * Fired when a queued transaction is released and becomes visible.
- * This simulates a message queue (e.g. RabbitMQ) delivering a new transaction.
  */
 class TransactionReleased implements ShouldBroadcastNow
 {
