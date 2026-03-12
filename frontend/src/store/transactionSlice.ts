@@ -6,6 +6,7 @@ export interface Transaction {
   to_name: string;
   amount: string;
   status: "Approved" | "Pending";
+  created_at?: string;
 }
 
 interface TransactionState {
